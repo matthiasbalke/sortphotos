@@ -37,3 +37,6 @@ nosetests.xml
 .pydevproject
 
 !src/Image-ExifTool/lib
+
+test
+!test/attributions.md
