@@ -27,9 +27,6 @@ import locale
 # Setting locale to the 'local' value
 locale.setlocale(locale.LC_ALL, '')
 
-exiftool_location = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Image-ExifTool', 'exiftool')
-
-
 # -------- convenience methods -------------
 
 def parse_date_exif(date_string):
@@ -185,7 +182,7 @@ class ExifTool(object):
 
     sentinel = "{ready}"
 
-    def __init__(self, executable=exiftool_location, verbose=False):
+    def __init__(self, executable, verbose=False):
         self.executable = executable
         self.verbose = verbose
 
@@ -212,6 +209,9 @@ class ExifTool(object):
             output += increment.decode('utf-8')
         return output.rstrip(' \t\n\r')[:-len(self.sentinel)]
 
+    def version(self):
+        return self.execute("-ver")
+
     def get_metadata(self, *args):
 
         try:
@@ -225,7 +225,7 @@ class ExifTool(object):
 
 
 
-def sortPhotos(src_dir, dest_dir, sort_format, rename_format, recursive=False,
+def sortPhotos(src_dir, dest_dir, sort_format, rename_format, exiftool_location, recursive=False,
         copy_files=False, test=False, remove_duplicates=True, day_begins=0,
         additional_groups_to_ignore=['File'], additional_tags_to_ignore=[],
         use_only_groups=None, use_only_tags=None, verbose=True, keep_filename=False):
@@ -268,6 +268,8 @@ def sortPhotos(src_dir, dest_dir, sort_format, rename_format, recursive=False,
         a list of tags that will be exclusived searched across for date info
     verbose : bool
         True if you want to see details of file processing
+    exiftool_location: str
+        specify exiftool binary to use, instead of bundled version
 
     """
 
@@ -301,7 +303,7 @@ def sortPhotos(src_dir, dest_dir, sort_format, rename_format, recursive=False,
 
 
     # get all metadata
-    with ExifTool(verbose=verbose) as e:
+    with ExifTool(executable=exiftool_location,verbose=verbose) as e:
         print('Preprocessing with ExifTool.  May take a while for a large number of files.')
         sys.stdout.flush()
         metadata = e.get_metadata(*args)
@@ -490,14 +492,35 @@ def main():
                     default=None,
                     help='specify a restricted set of tags to search for date information\n\
     e.g., EXIF:CreateDate')
+    parser.add_argument('--exiftool', type=str, help='specify exiftool binary to use, instead of bundled version')
 
     # parse command line arguments
     args = parser.parse_args()
 
-    sortPhotos(args.src_dir, args.dest_dir, args.sort, args.rename, args.recursive,
+    # choose between system vs. embedded exiftool
+    exiftool_location = choose_exiftool(args.exiftool)
+
+    sortPhotos(args.src_dir, args.dest_dir, args.sort, args.rename, exiftool_location, args.recursive,
         args.copy, args.test, not args.keep_duplicates, args.day_begins,
         args.ignore_groups, args.ignore_tags, args.use_only_groups,
         args.use_only_tags, not args.silent, args.keep_filename)
+
+
+def choose_exiftool(exiftool_system_location: str):
+
+    exiftool_location = exiftool_system_location
+
+    if exiftool_location is None:
+        exiftool_location = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Image-ExifTool', 'exiftool')
+        print("using embedded exiftool binary")
+    else:
+        print("using custom exiftool binary: " + exiftool_location)
+
+    with ExifTool(executable=exiftool_location) as e:
+        version = e.version()
+        print("exiftool version: " + version)
+
+    return exiftool_location
 
 if __name__ == '__main__':
     main()

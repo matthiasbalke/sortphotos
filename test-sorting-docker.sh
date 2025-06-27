@@ -10,17 +10,17 @@ rm -rf test/target/* || true
 echo "done."
 echo ""
 
-echo ">> updating docker image..."
-docker pull ${IMAGE}
-echo "done."
-echo ""
+#echo ">> updating docker image..."
+#docker pull ${IMAGE}
+#echo "done."
+#echo ""
 
 echo ">> sorting images..."
 docker run \
   --mount type=bind,src=$(pwd)/test/source,dst=/source \
   --mount type=bind,src=$(pwd)/test/target,dst=/target \
   --rm -it ${IMAGE} \
-  --recursive --copy /source /target
+  $@ --recursive --copy /source /target
 echo "done."
 echo ""
 
