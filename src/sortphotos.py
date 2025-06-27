@@ -269,7 +269,7 @@ def sortPhotos(src_dir, dest_dir, sort_format, rename_format, exiftool_location,
     verbose : bool
         True if you want to see details of file processing
     exiftool_location: str
-        use systemwide installed exiftool, instead of bundled version
+        specify exiftool binary to use, instead of bundled version
 
     """
 
@@ -492,13 +492,13 @@ def main():
                     default=None,
                     help='specify a restricted set of tags to search for date information\n\
     e.g., EXIF:CreateDate')
-    parser.add_argument('--system-exiftool', type=str, help='use systemwide installed exiftool, instead of bundled version')
+    parser.add_argument('--exiftool', type=str, help='specify exiftool binary to use, instead of bundled version')
 
     # parse command line arguments
     args = parser.parse_args()
 
     # choose between system vs. embedded exiftool
-    exiftool_location = choose_exiftool(args.system_exiftool)
+    exiftool_location = choose_exiftool(args.exiftool)
 
     sortPhotos(args.src_dir, args.dest_dir, args.sort, args.rename, exiftool_location, args.recursive,
         args.copy, args.test, not args.keep_duplicates, args.day_begins,
@@ -512,9 +512,9 @@ def choose_exiftool(exiftool_system_location: str):
 
     if exiftool_location is None:
         exiftool_location = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'Image-ExifTool', 'exiftool')
-        print("using embedded exiftool")
+        print("using embedded exiftool binary")
     else:
-        print("using system exiftool: " + exiftool_location)
+        print("using custom exiftool binary: " + exiftool_location)
 
     with ExifTool(executable=exiftool_location) as e:
         version = e.version()
